@@ -77,7 +77,7 @@ steps during the fitting process of the estimator the callback is registered on:
 
       The :meth:`~FitCallback.on_fit_task_end` hook returns a boolean, which when set to
       `True`, requests the estimator to stop the `fit` process at this task. Note that
-      estimators that don't aim to be interruptable will ignore this request and
+      estimators that don't aim to be interruptible will ignore this request and
       continue with the next task.
 
 All the hooks receive as mandatory arguments the estimator instance calling the callback
