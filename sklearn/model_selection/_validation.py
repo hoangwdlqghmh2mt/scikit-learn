@@ -813,11 +813,6 @@ def _fit_and_score(
         start_msg = f"[CV{progress_msg}] START {params_msg}"
         print(f"{start_msg}{(80 - len(start_msg)) * '.'}")
 
-    if fit_params:
-        metadata_callbacks = {"sample_weight": fit_params.get("sample_weight", {})}
-    else:
-        metadata_callbacks = {}
-
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
     fit_params = _check_method_params(X, params=fit_params, indices=train)
@@ -837,6 +832,11 @@ def _fit_and_score(
     X_train, y_train = _safe_split(estimator, X, y, train)
     X_test, y_test = _safe_split(estimator, X, y, test, train)
 
+    if (sample_weight := fit_params.get("sample_weight")) is not None:
+        metadata_callbacks = {"sample_weight": sample_weight}
+    else:
+        metadata_callbacks = None
+
     result = {}
 
     try:
@@ -849,7 +849,7 @@ def _fit_and_score(
                     estimator.fit(X_train, **fit_params)
                 else:
                     estimator.fit(X_train, y_train, **fit_params)
-        else:  # custom search class does not support callbacks
+        else:  # custom search class that does not support callbacks
             if y_train is None:
                 estimator.fit(X_train, **fit_params)
             else:
@@ -882,6 +882,11 @@ def _fit_and_score(
         if return_train_score:
             train_scores = _score(
                 estimator, X_train, y_train, scorer, score_params_train, error_score
+            )
+    finally:
+        if callback_ctx is not None:
+            callback_ctx.call_on_fit_task_end(
+                estimator=caller, X=X_train, y=y_train, metadata=metadata_callbacks
             )
 
     if verbose > 1:
@@ -921,11 +926,6 @@ def _fit_and_score(
         result["parameters"] = parameters
     if return_estimator:
         result["estimator"] = estimator
-
-    if callback_ctx is not None:
-        callback_ctx.call_on_fit_task_end(
-            estimator=caller, X=X_train, y=y_train, metadata=metadata_callbacks
-        )
 
     return result
 
